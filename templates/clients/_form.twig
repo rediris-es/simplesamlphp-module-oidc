@@ -64,6 +64,13 @@
             {{ form['scopes'].control | raw }}
         </div>
 
+    <div class="field">
+        <label for="frm-admins">{% trans '{oidc:client:admins}' %}</label>
+
+        {{ form['admins'].control | raw }}
+        <small class="helper">{% trans '{oidc:client:admins_help}' %}</small>
+    </div>
+
         <div class="ui divider"></div>
 
         <div class="ui buttons">

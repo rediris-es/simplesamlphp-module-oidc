@@ -165,6 +165,7 @@ class ClientEntitySpec extends ObjectBehavior
             'scopes' => [],
             'is_enabled' => true,
             'is_confidential' => false,
+            'admins' => []
         ]);
     }
 }

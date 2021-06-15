@@ -14,6 +14,7 @@
 
 namespace SimpleSAML\Modules\OpenIDConnect\Repositories;
 
+use PDO;
 use SimpleSAML\Modules\OpenIDConnect\Entity\Interfaces\ClientEntityInterface;
 use League\OAuth2\Server\Exception\OAuthServerException;
 use League\OAuth2\Server\Repositories\ClientRepositoryInterface;
@@ -23,12 +24,24 @@ class ClientRepository extends AbstractDatabaseRepository implements ClientRepos
 {
     public const TABLE_NAME = 'oidc_client';
 
+    public const ADMIN_TABLE_NAME = 'oidc_client_admins';
+
+    private const MAX_ADMINS = 25;
+
     /**
      * @return string
      */
     public function getTableName(): string
     {
         return $this->database->applyPrefix(self::TABLE_NAME);
+    }
+
+    /**
+     * @return string
+     */
+    private function getAdminTableName(): string
+    {
+        return $this->database->applyPrefix(self::ADMIN_TABLE_NAME);
     }
 
     /**
@@ -83,8 +96,10 @@ class ClientRepository extends AbstractDatabaseRepository implements ClientRepos
         if (!$rows = $stmt->fetchAll()) {
             return null;
         }
+        $rows[0]['admins'] = $this->getAdminsForClient($clientIdentifier);
 
         return ClientEntity::fromState(current($rows));
+
     }
 
     /**
@@ -170,6 +185,8 @@ EOS
             $stmt,
             $client->getState()
         );
+
+        $this->addAdmins($client->getIdentifier(), $client->getAdmins());
     }
 
     public function delete(ClientEntityInterface $client): void
@@ -204,6 +221,50 @@ EOF
         $this->database->write(
             $stmt,
             $client->getState()
+        );
+
+        $this->deleteAdmins($client->getIdentifier());
+        $this->addAdmins($client->getIdentifier(), $client->getAdmins());
+    }
+
+    private function getAdminsForClient(string $clientIdentifier): array
+    {
+        $stmt = $this->database->read(
+            "SELECT admin FROM {$this->getAdminTableName()} WHERE client_id = :id",
+            [
+                'id' => $clientIdentifier,
+            ]
+        );
+
+        if (!$rows = $stmt->fetchAll(PDO::FETCH_COLUMN)) {
+            return [];
+        }
+        return $rows;
+    }
+
+    private function addAdmins(string $clientIdentifier, array $admins)
+    {
+        if (sizeof($admins) > self::MAX_ADMINS) {
+            throw new \RuntimeException('Too many admins. Max ' . self::MAX_ADMINS);
+        }
+        foreach ($admins as $admin) {
+            $this->database->write(
+                "INSERT INTO {$this->getAdminTableName()} (client_id, admin) VALUES (:id, :admin)",
+                [
+                    'id' => $clientIdentifier,
+                    'admin' => $admin
+                ]
+            );
+        }
+    }
+
+    private function deleteAdmins(string $clientIdentifier)
+    {
+        $this->database->write(
+            "DELETE FROM {$this->getAdminTableName()} WHERE client_id = :id",
+            [
+                'id' => $clientIdentifier,
+            ]
         );
     }
 

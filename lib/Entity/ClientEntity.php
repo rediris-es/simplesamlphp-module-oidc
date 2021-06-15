@@ -49,6 +49,11 @@ class ClientEntity implements ClientEntityInterface
     private $isEnabled;
 
     /**
+     * @var array
+     */
+    private $admins;
+
+    /**
      * Constructor.
      */
     private function __construct()
@@ -65,7 +70,8 @@ class ClientEntity implements ClientEntityInterface
         array $scopes,
         bool $isEnabled,
         bool $isConfidential = false,
-        ?string $authSource = null
+        ?string $authSource = null,
+        array $admins =[]
     ): ClientEntityInterface {
         $client = new self();
 
@@ -78,6 +84,7 @@ class ClientEntity implements ClientEntityInterface
         $client->scopes = $scopes;
         $client->isEnabled = $isEnabled;
         $client->isConfidential = $isConfidential;
+        $client->admins = $admins;
 
         return $client;
     }
@@ -98,6 +105,7 @@ class ClientEntity implements ClientEntityInterface
         $client->scopes = json_decode($state['scopes'], true);
         $client->isEnabled = (bool) $state['is_enabled'];
         $client->isConfidential = (bool) ($state['is_confidential'] ?? false);
+        $client->admins = $state['admins'] ?? [];
 
         return $client;
     }
@@ -117,6 +125,8 @@ class ClientEntity implements ClientEntityInterface
             'scopes' => json_encode($this->getScopes()),
             'is_enabled' => (int) $this->isEnabled(),
             'is_confidential' => (int) $this->isConfidential(),
+            // The results of this method are used to bind to DB statements. Admins are their own table so don't return
+            //'admins' => $this->getAdmins(),
         ];
     }
 
@@ -132,6 +142,7 @@ class ClientEntity implements ClientEntityInterface
             'scopes' => $this->scopes,
             'is_enabled' => $this->isEnabled,
             'is_confidential' => $this->isConfidential,
+            'admins' => $this->getAdmins(),
         ];
     }
 
@@ -165,5 +176,10 @@ class ClientEntity implements ClientEntityInterface
     public function isEnabled(): bool
     {
         return $this->isEnabled;
+    }
+
+    public function getAdmins(): array
+    {
+        return $this->admins;
     }
 }

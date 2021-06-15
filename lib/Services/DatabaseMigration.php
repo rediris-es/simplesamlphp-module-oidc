@@ -94,6 +94,11 @@ class DatabaseMigration
             $this->version20200901163000();
             $this->database->write("INSERT INTO ${versionsTablename} (version) VALUES ('20200901163000')");
         }
+
+        if (!\in_array('20210614164900', $versions, true)) {
+            $this->version20210614164900();
+            $this->database->write("INSERT INTO ${versionsTablename} (version) VALUES ('20210614164900')");
+        }
     }
 
     private function versionsTableName(): string
@@ -214,6 +219,24 @@ EOT
         $this->database->write(<<< EOT
         ALTER TABLE ${clientTableName}
             ADD nonce TEXT NULL 
+EOT
+        );
+    }
+
+    private function version20210614164900(): void
+    {
+        $clientTableName = $this->database->applyPrefix(ClientRepository::TABLE_NAME);
+        $adminTableName = $this->database->applyPrefix(ClientRepository::ADMIN_TABLE_NAME);
+        $fkAdminClient = $this->generateIdentifierName([$adminTableName, 'client_id'], 'fk');
+        $uniqueAdminClient = $this->generateIdentifierName([$adminTableName, 'admin', 'client_id'], 'unq');
+        $this->database->write(<<< EOT
+        CREATE TABLE {$adminTableName} (
+            client_id VARCHAR(191) NOT NULL,
+            admin VARCHAR(191) NOT NULL,
+            CONSTRAINT {$uniqueAdminClient} UNIQUE (admin, client_id),
+            CONSTRAINT {$fkAdminClient} FOREIGN KEY (client_id)
+            REFERENCES {$clientTableName} (id) ON DELETE CASCADE
+            )
 EOT
         );
     }

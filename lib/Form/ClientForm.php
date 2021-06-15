@@ -64,19 +64,8 @@ class ClientForm extends Form
         $values = parent::getValues(true);
 
         // Sanitize Redirect URIs
-        $redirect_uris = preg_split("/[\t\r\n]+/", $values['redirect_uri']);
-        $redirect_uris = array_filter(
-            $redirect_uris,
-            /**
-             * @param string $redirect_uri
-             *
-             * @return bool
-             */
-            function ($redirect_uri) {
-                return !empty(trim($redirect_uri));
-            }
-        );
-        $values['redirect_uri'] = $redirect_uris;
+        $values['redirect_uri'] = $this->splitAndFilterEmpty($values['redirect_uri']);
+        $values['admins'] = $this->splitAndFilterEmpty($values['admins']);
         // openid scope is mandatory
         $values['scopes'] = array_unique(
             array_merge(
@@ -88,6 +77,22 @@ class ClientForm extends Form
         return $values;
     }
 
+    private function splitAndFilterEmpty(string $input)
+    {
+        $split_input = preg_split("/[\t\r\n]+/", $input);
+        return array_filter(
+            $split_input,
+            /**
+             * @param string $redirect_uri
+             *
+             * @return bool
+             */
+            function ($in) {
+                return !empty(trim($in));
+            }
+        );
+    }
+
     /**
      * @param array $values
      * @param bool  $erase
@@ -97,6 +102,7 @@ class ClientForm extends Form
     public function setDefaults($values, $erase = false)
     {
         $values['redirect_uri'] = implode("\n", $values['redirect_uri']);
+        $values['admins'] = implode("\n", $values['admins']);
         $values['scopes'] = array_intersect($values['scopes'], array_keys($this->getScopes()));
 
         return parent::setDefaults($values, $erase);
@@ -134,6 +140,7 @@ class ClientForm extends Form
             ->setAttribute('class', 'ui fluid dropdown')
             ->setItems($scopes)
             ->setRequired('Select one scope at least');
+        $this->addTextArea('admins', '{oidc:client:admins}', null, 5);
     }
 
     protected function getScopes(): array

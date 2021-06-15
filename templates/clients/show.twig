@@ -72,6 +72,16 @@
                 </ul>
             </td>
         </tr>
+        <tr>
+            <td class="collapsing">{% trans '{oidc:client:admins}' %}</td>
+            <td>
+                <ul class="list">
+                    {% for admin in client.admins %}
+                        <li>{{ admin }}</li>
+                    {% endfor %}
+                </ul>
+            </td>
+        </tr>
         </tbody>
         <tfoot>
         <tr class="full-width">

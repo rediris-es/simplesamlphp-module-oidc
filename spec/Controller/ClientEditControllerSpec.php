@@ -131,6 +131,7 @@ class ClientEditControllerSpec extends ObjectBehavior
             'scopes' => ['openid'],
             'is_enabled' => true,
             'is_confidential' => false,
+            'admins' => [],
         ];
 
         $request->getQueryParams()->shouldBeCalled()->willReturn(['client_id' => 'clientid']);
@@ -143,15 +144,19 @@ class ClientEditControllerSpec extends ObjectBehavior
         $clientForm->setAction(Argument::any())->shouldBeCalled();
         $clientForm->isSuccess()->shouldBeCalled()->willReturn(true);
         $clientForm->setDefaults($data)->shouldBeCalled();
-        $clientForm->getValues()->shouldBeCalled()->willReturn([
-            'name' => 'name',
-            'description' => 'description',
-            'auth_source' => 'auth_source',
-            'redirect_uri' => ['http://localhost/redirect'],
-            'scopes' => ['openid'],
-            'is_enabled' => true,
-            'is_confidential' => false,
-        ]);
+        $clientForm->getValues()->shouldBeCalled()->willReturn(
+            [
+                'name' => 'name',
+                'description' => 'description',
+                'auth_source' => 'auth_source',
+                'redirect_uri' => ['http://localhost/redirect'],
+                'scopes' => ['openid'],
+                'is_enabled' => true,
+                'is_confidential' => false,
+                'admins' => [],
+
+            ]
+        );
 
         $clientRepository->update(Argument::exact(ClientEntity::fromData(
             'clientid',

@@ -17,6 +17,7 @@ namespace Tests\SimpleSAML\Modules\OpenIDConnect\Repositories;
 use League\OAuth2\Server\Exception\OAuthServerException;
 use PHPUnit\Framework\TestCase;
 use SimpleSAML\Configuration;
+use SimpleSAML\Module\cdc\Client;
 use SimpleSAML\Modules\OpenIDConnect\Entity\ClientEntity;
 use SimpleSAML\Modules\OpenIDConnect\Repositories\ClientRepository;
 use SimpleSAML\Modules\OpenIDConnect\Entity\Interfaces\ClientEntityInterface;
@@ -213,10 +214,34 @@ class ClientRepositoryTest extends TestCase
         $this->assertNull($foundClient);
     }
 
+    public function testCrudWithAdmin(): void
+    {
+        $client = self::getClient('clientid', true, false, ['admin1', 'test1']);
+        self::$repository->add($client);
+
+        $client = self::$repository->findById('clientid');
+        $this->assertNotEmpty($client->getAdmins());
+        $this->assertEquals(['admin1', 'test1'], $client->getAdmins());
+
+        $newAdmins = ['admin1', 'test1', 'new'];
+        $client = self::getClient('clientid', true, false, ['admin1', 'test1', 'new']);
+        self::$repository->update($client);
+        $client = self::$repository->findById('clientid');
+        $this->assertEquals(['admin1', 'test1', 'new'], $client->getAdmins());
+
+
+        /** @psalm-suppress PossiblyNullArgument */
+        self::$repository->delete($client);
+        $foundClient = self::$repository->findById('clientid');
+
+        $this->assertNull($foundClient);
+    }
+
     public static function getClient(
         string $id,
         bool $enabled = true,
-        bool $confidential = false
+        bool $confidential = false,
+        array $admins = []
     ): ClientEntityInterface {
         return ClientEntity::fromData(
             $id,
@@ -227,7 +252,8 @@ class ClientRepositoryTest extends TestCase
             ['openid'],
             $enabled,
             $confidential,
-            'admin'
+            'admin',
+            $admins
         );
     }
 }
