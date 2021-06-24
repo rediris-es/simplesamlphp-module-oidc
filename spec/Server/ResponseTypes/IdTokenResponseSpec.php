@@ -47,8 +47,7 @@ class IdTokenResponseSpec extends ObjectBehavior
         AccessTokenEntity $accessToken,
         ClientEntity $clientEntity,
         Configuration $oidcConfig
-    ): void
-    {
+    ): void {
         $this->certFolder = dirname(__DIR__, 3) . '/docker/ssp/';
         $userEntity = UserEntity::fromData(self::SUBJECT, [
             'email' => 'myEmail@example.com'
@@ -84,7 +83,7 @@ class IdTokenResponseSpec extends ObjectBehavior
             $privateKey
         );
 
-        $this->beConstructedWith($idTokenBuilder);
+        $this->beConstructedWith($configurationService, $idTokenBuilder);
         $this->setPrivateKey($privateKey);
     }
 
