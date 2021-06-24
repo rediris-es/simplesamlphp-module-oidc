@@ -49,6 +49,7 @@ use SimpleSAML\Modules\OpenIDConnect\Repositories\ScopeRepository;
 use SimpleSAML\Modules\OpenIDConnect\Repositories\UserRepository;
 use SimpleSAML\Modules\OpenIDConnect\Server\Grants\RefreshTokenGrant;
 use SimpleSAML\Modules\OpenIDConnect\Server\ResponseTypes\IdTokenResponse;
+use SimpleSAML\Modules\OpenIDConnect\Utils\Checker\Rules\AddClaimsToIdTokenRule;
 use SimpleSAML\Modules\OpenIDConnect\Utils\Checker\Rules\ClientIdRule;
 use SimpleSAML\Modules\OpenIDConnect\Utils\Checker\Rules\CodeChallengeMethodRule;
 use SimpleSAML\Modules\OpenIDConnect\Utils\Checker\Rules\CodeChallengeRule;
@@ -155,6 +156,7 @@ class Container implements ContainerInterface
             new ScopeRule($scopeRepository),
             new CodeChallengeRule(),
             new CodeChallengeMethodRule($codeChallengeVerifiersRepository),
+            new AddClaimsToIdTokenRule(),
         ];
         $requestRuleManager = new RequestRulesManager($requestRules);
         $this->services[RequestRulesManager::class] = $requestRuleManager;
