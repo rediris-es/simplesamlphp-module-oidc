@@ -28,8 +28,10 @@ use SimpleSAML\Modules\OpenIDConnect\Factories\FormFactory;
 use SimpleSAML\Modules\OpenIDConnect\Factories\TemplateFactory;
 use SimpleSAML\Modules\OpenIDConnect\Form\ClientForm;
 use SimpleSAML\Modules\OpenIDConnect\Repositories\ClientRepository;
+use SimpleSAML\Modules\OpenIDConnect\Services\AuthContextService;
 use SimpleSAML\Modules\OpenIDConnect\Services\ConfigurationService;
 use SimpleSAML\Modules\OpenIDConnect\Services\SessionMessagesService;
+use SimpleSAML\Utils\Auth;
 use SimpleSAML\XHTML\Template;
 
 class ClientEditControllerSpec extends ObjectBehavior
@@ -44,14 +46,17 @@ class ClientEditControllerSpec extends ObjectBehavior
         FormFactory $formFactory,
         SessionMessagesService $sessionMessagesService,
         ServerRequest $request,
-        UriInterface $uri
+        UriInterface $uri,
+        AuthContextService $authContextService
     ) {
         $_SERVER['REQUEST_URI'] = '/';
         Configuration::loadFromArray([], '', 'simplesaml');
-
+        $authContextService->isSspAdmin()->willReturn(true);
         $configurationService->getOpenIdConnectModuleURL()->willReturn("url");
 
+        $request->withQueryParams(Argument::any())->willReturn($request);
         $request->getUri()->willReturn($uri);
+        $request->getRequestTarget()->willReturn('/');
         $uri->getPath()->willReturn('/');
 
         $this->beConstructedWith(
@@ -59,7 +64,8 @@ class ClientEditControllerSpec extends ObjectBehavior
             $clientRepository,
             $templateFactory,
             $formFactory,
-            $sessionMessagesService
+            $sessionMessagesService,
+            $authContextService
         );
     }
 
@@ -96,7 +102,7 @@ class ClientEditControllerSpec extends ObjectBehavior
         $clientEntity->getIdentifier()->shouldBeCalled()->willReturn('clientid');
 
         $request->getQueryParams()->shouldBeCalled()->willReturn(['client_id' => 'clientid']);
-        $clientRepository->findById('clientid')->shouldBeCalled()->willReturn($clientEntity);
+        $clientRepository->findById('clientid', null)->shouldBeCalled()->willReturn($clientEntity);
         $clientEntity->toArray()->shouldBeCalled()->willReturn($data);
 
         $formFactory->build(ClientForm::class)->shouldBeCalled()->willReturn($clientForm);
@@ -131,12 +137,14 @@ class ClientEditControllerSpec extends ObjectBehavior
             'scopes' => ['openid'],
             'is_enabled' => true,
             'is_confidential' => false,
+            'owner' => 'existingOwner'
         ];
 
         $request->getQueryParams()->shouldBeCalled()->willReturn(['client_id' => 'clientid']);
-        $clientRepository->findById('clientid')->shouldBeCalled()->willReturn($clientEntity);
+        $clientRepository->findById('clientid', null)->shouldBeCalled()->willReturn($clientEntity);
         $clientEntity->getIdentifier()->shouldBeCalled()->willReturn('clientid');
         $clientEntity->getSecret()->shouldBeCalled()->willReturn('validsecret');
+        $clientEntity->getOwner()->shouldBeCalled()->willReturn('existingOwner');
         $clientEntity->toArray()->shouldBeCalled()->willReturn($data);
 
         $formFactory->build(ClientForm::class)->shouldBeCalled()->willReturn($clientForm);
@@ -151,6 +159,7 @@ class ClientEditControllerSpec extends ObjectBehavior
             'scopes' => ['openid'],
             'is_enabled' => true,
             'is_confidential' => false,
+            'owner' => 'existingOwner'
         ]);
 
         $clientRepository->update(Argument::exact(ClientEntity::fromData(
@@ -162,8 +171,75 @@ class ClientEditControllerSpec extends ObjectBehavior
             ['openid'],
             true,
             false,
-            'auth_source'
-        )))->shouldBeCalled();
+            'auth_source',
+            'existingOwner'
+        )), null)->shouldBeCalled();
+        $sessionMessagesService->addMessage('{oidc:client:updated}')->shouldBeCalled();
+
+        $this->__invoke($request)->shouldBeAnInstanceOf(RedirectResponse::class);
+    }
+
+    /**
+     * @return void
+     */
+    public function it_sends_owner_arg_to_repo_on_update(
+        ServerRequest $request,
+        FormFactory $formFactory,
+        ClientForm $clientForm,
+        ClientRepository $clientRepository,
+        ClientEntity $clientEntity,
+        SessionMessagesService $sessionMessagesService,
+        AuthContextService $authContextService
+    ) {
+        $authContextService->isSspAdmin()->shouldBeCalled()->willReturn(false);
+        $authContextService->getAuthUserId()->willReturn('authedUserId');
+        $data = [
+            'id' => 'clientid',
+            'secret' => 'validsecret',
+            'name' => 'name',
+            'description' => 'description',
+            'auth_source' => 'auth_source',
+            'redirect_uri' => ['http://localhost/redirect'],
+            'scopes' => ['openid'],
+            'is_enabled' => true,
+            'is_confidential' => false,
+            'owner' => 'existingOwner'
+        ];
+
+        $request->getQueryParams()->shouldBeCalled()->willReturn(['client_id' => 'clientid']);
+        $clientRepository->findById('clientid', 'authedUserId')->shouldBeCalled()->willReturn($clientEntity);
+        $clientEntity->getIdentifier()->shouldBeCalled()->willReturn('clientid');
+        $clientEntity->getSecret()->shouldBeCalled()->willReturn('validsecret');
+        $clientEntity->getOwner()->shouldBeCalled()->willReturn('existingOwner');
+        $clientEntity->toArray()->shouldBeCalled()->willReturn($data);
+
+        $formFactory->build(ClientForm::class)->shouldBeCalled()->willReturn($clientForm);
+        $clientForm->setAction(Argument::any())->shouldBeCalled();
+        $clientForm->isSuccess()->shouldBeCalled()->willReturn(true);
+        $clientForm->setDefaults($data)->shouldBeCalled();
+        $clientForm->getValues()->shouldBeCalled()->willReturn([
+                                                                   'name' => 'name',
+                                                                   'description' => 'description',
+                                                                   'auth_source' => 'auth_source',
+                                                                   'redirect_uri' => ['http://localhost/redirect'],
+                                                                   'scopes' => ['openid'],
+                                                                   'is_enabled' => true,
+                                                                   'is_confidential' => false,
+                                                                   'owner' => 'existingOwner'
+                                                               ]);
+
+        $clientRepository->update(Argument::exact(ClientEntity::fromData(
+            'clientid',
+            'validsecret',
+            'name',
+            'description',
+            ['http://localhost/redirect'],
+            ['openid'],
+            true,
+            false,
+            'auth_source',
+            'existingOwner'
+        )), 'authedUserId')->shouldBeCalled();
         $sessionMessagesService->addMessage('{oidc:client:updated}')->shouldBeCalled();
 
         $this->__invoke($request)->shouldBeAnInstanceOf(RedirectResponse::class);
@@ -188,7 +264,7 @@ class ClientEditControllerSpec extends ObjectBehavior
         ClientRepository $clientRepository
     ) {
         $request->getQueryParams()->shouldBeCalled()->willReturn(['client_id' => 'clientid']);
-        $clientRepository->findById('clientid')->shouldBeCalled()->willReturn(null);
+        $clientRepository->findById('clientid', null)->shouldBeCalled()->willReturn(null);
 
         $this->shouldThrow(NotFound::class)->during('__invoke', [$request]);
     }

@@ -17,6 +17,7 @@ namespace SimpleSAML\Modules\OpenIDConnect\Controller;
 use SimpleSAML\Modules\OpenIDConnect\Factories\TemplateFactory;
 use SimpleSAML\Modules\OpenIDConnect\Repositories\ClientRepository;
 use Laminas\Diactoros\ServerRequest;
+use SimpleSAML\Modules\OpenIDConnect\Services\AuthContextService;
 
 class ClientIndexController
 {
@@ -30,10 +31,19 @@ class ClientIndexController
      */
     private $templateFactory;
 
-    public function __construct(ClientRepository $clientRepository, TemplateFactory $templateFactory)
-    {
+    /**
+     * @var AuthContextService
+     */
+    private $authContextService;
+
+    public function __construct(
+        ClientRepository $clientRepository,
+        TemplateFactory $templateFactory,
+        AuthContextService $authContextService
+    ) {
         $this->clientRepository = $clientRepository;
         $this->templateFactory = $templateFactory;
+        $this->authContextService = $authContextService;
     }
 
     public function __invoke(ServerRequest $request): \SimpleSAML\XHTML\Template
@@ -42,8 +52,8 @@ class ClientIndexController
 
         $page = array_key_exists('page', $queryParams) ? (int) $queryParams['page'] : 1;
         $query = array_key_exists('q', $queryParams) ? (string) $queryParams['q'] : '';
-
-        $pagination = $this->clientRepository->findPaginated($page, $query);
+        $authedUser = $this->authContextService->isSspAdmin() ? null : $this->authContextService->getAuthUserId();
+        $pagination = $this->clientRepository->findPaginated($page, $query, $authedUser);
 
         return $this->templateFactory->render('oidc:clients/index.twig', [
             'clients' => $pagination['items'],

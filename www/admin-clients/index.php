@@ -12,8 +12,7 @@
  * file that was distributed with this source code.
  */
 
-use SimpleSAML\Modules\OpenIDConnect\Controller\ClientCreateController;
-use SimpleSAML\Modules\OpenIDConnect\Services\AuthContextService;
+use SimpleSAML\Modules\OpenIDConnect\Controller\ClientIndexController;
 use SimpleSAML\Modules\OpenIDConnect\Services\RoutingService;
 
-RoutingService::callWithPermission(ClientCreateController::class, AuthContextService::PERM_CLIENT);
+RoutingService::call(ClientIndexController::class);

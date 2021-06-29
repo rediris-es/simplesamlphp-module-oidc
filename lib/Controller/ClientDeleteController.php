@@ -15,9 +15,10 @@
 namespace SimpleSAML\Modules\OpenIDConnect\Controller;
 
 use SimpleSAML\Error\BadRequest;
-use SimpleSAML\Modules\OpenIDConnect\Controller\Traits\GetClientFromRequestTrait;
+use SimpleSAML\Modules\OpenIDConnect\Controller\Traits\AuthenticatedGetClientFromRequestTrait;
 use SimpleSAML\Modules\OpenIDConnect\Factories\TemplateFactory;
 use SimpleSAML\Modules\OpenIDConnect\Repositories\ClientRepository;
+use SimpleSAML\Modules\OpenIDConnect\Services\AuthContextService;
 use SimpleSAML\Modules\OpenIDConnect\Services\SessionMessagesService;
 use SimpleSAML\Utils\HTTP;
 use Laminas\Diactoros\Response\RedirectResponse;
@@ -25,7 +26,7 @@ use Laminas\Diactoros\ServerRequest;
 
 class ClientDeleteController
 {
-    use GetClientFromRequestTrait;
+    use AuthenticatedGetClientFromRequestTrait;
 
     /**
      * @var \SimpleSAML\Modules\OpenIDConnect\Factories\TemplateFactory
@@ -40,11 +41,13 @@ class ClientDeleteController
     public function __construct(
         ClientRepository $clientRepository,
         TemplateFactory $templateFactory,
-        SessionMessagesService $messages
+        SessionMessagesService $messages,
+        AuthContextService $authContextService
     ) {
         $this->clientRepository = $clientRepository;
         $this->templateFactory = $templateFactory;
         $this->messages = $messages;
+        $this->authContextService = $authContextService;
     }
 
     /**
@@ -55,7 +58,7 @@ class ClientDeleteController
         $client = $this->getClientFromRequest($request);
         $body = $request->getParsedBody();
         $clientSecret = $body['secret'] ?? null;
-
+        $authedUser = $this->authContextService->isSspAdmin() ? null : $this->authContextService->getAuthUserId();
         if ('POST' === mb_strtoupper($request->getMethod())) {
             if (!$clientSecret) {
                 throw new BadRequest('Client secret is missing.');
@@ -65,7 +68,7 @@ class ClientDeleteController
                 throw new BadRequest('Client secret is invalid.');
             }
 
-            $this->clientRepository->delete($client);
+            $this->clientRepository->delete($client, $authedUser);
             $this->messages->addMessage('{oidc:client:removed}');
 
             return new RedirectResponse(HTTP::addURLParameters('index.php', []));
