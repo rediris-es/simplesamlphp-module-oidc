@@ -11,6 +11,7 @@ use League\OAuth2\Server\ResponseTypes\ResponseTypeInterface;
 use LogicException;
 use Psr\Http\Message\ServerRequestInterface;
 use SimpleSAML\Modules\OpenIDConnect\Entity\Interfaces\ClientEntityInterface;
+use SimpleSAML\Modules\OpenIDConnect\Server\Exceptions\OidcServerException;
 use SimpleSAML\Modules\OpenIDConnect\Server\RequestTypes\AuthorizationRequest;
 use SimpleSAML\Modules\OpenIDConnect\Services\IdTokenBuilder;
 use SimpleSAML\Modules\OpenIDConnect\Utils\Checker\RequestRulesManager;
@@ -69,6 +70,10 @@ class ImplicitGrant extends OAuth2ImplicitGrant
         return parent::completeAuthorizationRequest($authorizationRequest);
     }
 
+    /**
+     * @throws \Throwable
+     * @throws OidcServerException
+     */
     public function validateAuthorizationRequestWithClientAndRedirectUri(
         ServerRequestInterface $request,
         ClientEntityInterface $client,
@@ -88,7 +93,7 @@ class ImplicitGrant extends OAuth2ImplicitGrant
             RequiredNonceRule::class,
         ];
 
-        $resultBag = $this->requestRulesManager->check($request, $rulesToExecute);
+        $resultBag = $this->requestRulesManager->check($request, $rulesToExecute, true);
 
         $authorizationRequest = AuthorizationRequest::fromOAuth2AuthorizationRequest($oAuth2AuthorizationRequest);
 
