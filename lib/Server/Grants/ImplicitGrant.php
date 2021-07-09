@@ -21,7 +21,7 @@ use SimpleSAML\Modules\OpenIDConnect\Utils\Checker\Rules\RequestParameterRule;
 use SimpleSAML\Modules\OpenIDConnect\Utils\Checker\Rules\AddClaimsToIdTokenRule;
 use SimpleSAML\Modules\OpenIDConnect\Utils\Checker\Rules\RequiredNonceRule;
 use SimpleSAML\Modules\OpenIDConnect\Utils\Checker\Rules\RequiredOpenIdScopeRule;
-use SimpleSAML\Modules\OpenIDConnect\Utils\Checker\Rules\ScopeRule;
+use SimpleSAML\Modules\OpenIDConnect\Utils\Checker\Rules\ResponseTypeRule;
 
 class ImplicitGrant extends OAuth2ImplicitGrant
 {
@@ -88,11 +88,12 @@ class ImplicitGrant extends OAuth2ImplicitGrant
             PromptRule::class,
             MaxAgeRule::class,
             RequiredOpenIdScopeRule::class,
+            ResponseTypeRule::class,
             AddClaimsToIdTokenRule::class,
             RequiredNonceRule::class,
         ];
 
-        $resultBag = $this->requestRulesManager->check($request, $rulesToExecute, true);
+        $resultBag = $this->requestRulesManager->check($request, $rulesToExecute, $this->queryDelimiter === '#');
 
         $authorizationRequest = AuthorizationRequest::fromOAuth2AuthorizationRequest($oAuth2AuthorizationRequest);
 
@@ -104,10 +105,8 @@ class ImplicitGrant extends OAuth2ImplicitGrant
             $authorizationRequest->setAuthTime((int) $maxAge->getValue());
         }
 
-        $addClaimsToIdToken = $resultBag->get(AddClaimsToIdTokenRule::class);
-        if (null !== $addClaimsToIdToken) {
-            $authorizationRequest->setAddClaimsToIdToken($addClaimsToIdToken->getValue());
-        }
+        $addClaimsToIdToken = ($resultBag->getOrFail(AddClaimsToIdTokenRule::class))->getValue();
+        $authorizationRequest->setAddClaimsToIdToken($addClaimsToIdToken);
 
         return $authorizationRequest;
     }

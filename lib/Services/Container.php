@@ -60,6 +60,7 @@ use SimpleSAML\Modules\OpenIDConnect\Utils\Checker\Rules\RedirectUriRule;
 use SimpleSAML\Modules\OpenIDConnect\Utils\Checker\Rules\RequestParameterRule;
 use SimpleSAML\Modules\OpenIDConnect\Utils\Checker\Rules\RequiredNonceRule;
 use SimpleSAML\Modules\OpenIDConnect\Utils\Checker\Rules\RequiredOpenIdScopeRule;
+use SimpleSAML\Modules\OpenIDConnect\Utils\Checker\Rules\ResponseTypeRule;
 use SimpleSAML\Modules\OpenIDConnect\Utils\Checker\Rules\ScopeRule;
 use SimpleSAML\Modules\OpenIDConnect\Utils\Checker\Rules\StateRule;
 use SimpleSAML\Session;
@@ -161,6 +162,7 @@ class Container implements ContainerInterface
             new CodeChallengeMethodRule($codeChallengeVerifiersRepository),
             new AddClaimsToIdTokenRule(),
             new RequiredNonceRule(),
+            new ResponseTypeRule(),
         ];
         $requestRuleManager = new RequestRulesManager($requestRules);
         $this->services[RequestRulesManager::class] = $requestRuleManager;
