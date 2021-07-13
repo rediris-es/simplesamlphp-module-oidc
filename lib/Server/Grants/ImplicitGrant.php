@@ -11,6 +11,7 @@ use League\OAuth2\Server\ResponseTypes\ResponseTypeInterface;
 use LogicException;
 use Psr\Http\Message\ServerRequestInterface;
 use SimpleSAML\Modules\OpenIDConnect\Entity\Interfaces\ClientEntityInterface;
+use SimpleSAML\Modules\OpenIDConnect\Entity\Interfaces\EntityStringRepresentationInterface;
 use SimpleSAML\Modules\OpenIDConnect\Server\Exceptions\OidcServerException;
 use SimpleSAML\Modules\OpenIDConnect\Server\RequestTypes\AuthorizationRequest;
 use SimpleSAML\Modules\OpenIDConnect\Services\IdTokenBuilder;
@@ -153,13 +154,15 @@ class ImplicitGrant extends OAuth2ImplicitGrant
             $finalizedScopes
         );
 
-        // TODO mivanci make released access token string immutable so we can generate at_hash properly
+        if ($accessToken instanceof EntityStringRepresentationInterface === false) {
+            throw new \RuntimeException('AccessToken must implement ' . EntityStringRepresentationInterface::class);
+        }
 
         $addAccessTokenHashToIdToken = false;
         if ($authorizationRequest->shouldReturnAccessTokenInAuthorizationResponse()) {
             $addAccessTokenHashToIdToken = true;
 
-            $responseParams['access_token'] = (string) $accessToken;
+            $responseParams['access_token'] = $accessToken->toString() ?? (string) $accessToken;
             $responseParams['token_type'] = 'Bearer';
             $responseParams['expires_in'] = $accessToken->getExpiryDateTime()->getTimestamp() - \time();
         }
