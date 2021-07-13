@@ -6,9 +6,13 @@ use Psr\Http\Message\ServerRequestInterface;
 use SimpleSAML\Modules\OpenIDConnect\Server\Exceptions\OidcServerException;
 use SimpleSAML\Modules\OpenIDConnect\Utils\Checker\Interfaces\ResultBagInterface;
 use SimpleSAML\Modules\OpenIDConnect\Utils\Checker\Interfaces\ResultInterface;
+use SimpleSAML\Modules\OpenIDConnect\Utils\Checker\Result;
 
-class RequestParameterRule extends AbstractRule
+class ResponseTypeRule extends AbstractRule
 {
+    /**
+     * @inheritDoc
+     */
     public function checkRule(
         ServerRequestInterface $request,
         ResultBagInterface $currentResultBag,
@@ -16,20 +20,13 @@ class RequestParameterRule extends AbstractRule
         bool $useFragmentInHttpErrorResponses = false
     ): ?ResultInterface {
         $queryParams = $request->getQueryParams();
-        if (!array_key_exists('request', $queryParams)) {
-            return null;
+
+        if (!isset($queryParams['response_type']) || !isset($queryParams['client_id'])) {
+            throw  OidcServerException::invalidRequest('Missing response_type');
         }
 
-        /** @var string $redirectUri */
-        $redirectUri = $currentResultBag->getOrFail(RedirectUriRule::class)->getValue();
-        $state = $currentResultBag->get(StateRule::class);
+        // TODO consider checking for supported response types, for example, from configuration...
 
-        throw OidcServerException::requestNotSupported(
-            'request object not supported',
-            $redirectUri,
-            null,
-            $state ? $state->getValue() : null,
-            $useFragmentInHttpErrorResponses
-        );
+        return new Result($this->getKey(), $queryParams['response_type']);
     }
 }

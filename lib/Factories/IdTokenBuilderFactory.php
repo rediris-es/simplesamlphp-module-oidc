@@ -16,19 +16,11 @@ namespace SimpleSAML\Modules\OpenIDConnect\Factories;
 
 use League\OAuth2\Server\CryptKey;
 use SimpleSAML\Modules\OpenIDConnect\ClaimTranslatorExtractor;
-use SimpleSAML\Modules\OpenIDConnect\Repositories\UserRepository;
-use SimpleSAML\Modules\OpenIDConnect\Server\ResponseTypes\IdTokenResponse;
 use SimpleSAML\Modules\OpenIDConnect\Services\ConfigurationService;
 use SimpleSAML\Modules\OpenIDConnect\Services\IdTokenBuilder;
-use SimpleSAML\Utils\Config;
 
 class IdTokenBuilderFactory
 {
-    /**
-     * @var \SimpleSAML\Modules\OpenIDConnect\Repositories\UserRepository
-     */
-    private $userRepository;
-
     /**
      * @var \SimpleSAML\Modules\OpenIDConnect\Services\ConfigurationService
      */
@@ -45,12 +37,10 @@ class IdTokenBuilderFactory
 
 
     public function __construct(
-        UserRepository $userRepository,
         ConfigurationService $configurationService,
         ClaimTranslatorExtractor $claimTranslatorExtractor,
         CryptKey $privateKey
     ) {
-        $this->userRepository = $userRepository;
         $this->configurationService = $configurationService;
         $this->claimTranslatorExtractor = $claimTranslatorExtractor;
         $this->privateKey = $privateKey;
@@ -59,7 +49,6 @@ class IdTokenBuilderFactory
     public function build(): IdTokenBuilder
     {
         return new IdTokenBuilder(
-            $this->userRepository,
             $this->claimTranslatorExtractor,
             $this->configurationService,
             $this->privateKey

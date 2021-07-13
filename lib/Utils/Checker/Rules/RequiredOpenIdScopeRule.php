@@ -2,25 +2,18 @@
 
 namespace SimpleSAML\Modules\OpenIDConnect\Utils\Checker\Rules;
 
+use League\OAuth2\Server\Entities\ScopeEntityInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use SimpleSAML\Modules\OpenIDConnect\Repositories\CodeChallengeVerifiersRepository;
 use SimpleSAML\Modules\OpenIDConnect\Server\Exceptions\OidcServerException;
 use SimpleSAML\Modules\OpenIDConnect\Utils\Checker\Interfaces\ResultBagInterface;
 use SimpleSAML\Modules\OpenIDConnect\Utils\Checker\Interfaces\ResultInterface;
 use SimpleSAML\Modules\OpenIDConnect\Utils\Checker\Result;
 
-class CodeChallengeMethodRule extends AbstractRule
+class RequiredOpenIdScopeRule extends AbstractRule
 {
     /**
-     * @var CodeChallengeVerifiersRepository
+     * @inheritDoc
      */
-    protected $codeChallengeVerifiersRepository;
-
-    public function __construct(CodeChallengeVerifiersRepository $codeChallengeVerifiersRepository)
-    {
-        $this->codeChallengeVerifiersRepository = $codeChallengeVerifiersRepository;
-    }
-
     public function checkRule(
         ServerRequestInterface $request,
         ResultBagInterface $currentResultBag,
@@ -31,19 +24,17 @@ class CodeChallengeMethodRule extends AbstractRule
         $redirectUri = $currentResultBag->getOrFail(RedirectUriRule::class)->getValue();
         /** @var string|null $state */
         $state = $currentResultBag->getOrFail(StateRule::class)->getValue();
+        /** @var ScopeEntityInterface[] $validScopes */
+        $validScopes = $currentResultBag->getOrFail(ScopeRule::class)->getValue();
 
-        $codeChallengeMethod = $request->getQueryParams()['code_challenge_method'] ?? 'plain';
-        $codeChallengeVerifiers = $this->codeChallengeVerifiersRepository->getAll();
+        $isOpenIdScopePresent = (bool) array_filter($validScopes, function ($scopeEntity) {
+            return $scopeEntity->getIdentifier() === 'openid';
+        });
 
-        if (\array_key_exists($codeChallengeMethod, $codeChallengeVerifiers) === false) {
+        if (! $isOpenIdScopePresent) {
             throw OidcServerException::invalidRequest(
-                'code_challenge_method',
-                'Code challenge method must be one of ' . \implode(', ', \array_map(
-                    function ($method) {
-                        return '`' . $method . '`';
-                    },
-                    \array_keys($codeChallengeVerifiers)
-                )),
+                'scope',
+                'Scope openid is required',
                 null,
                 $redirectUri,
                 $state,
@@ -51,6 +42,6 @@ class CodeChallengeMethodRule extends AbstractRule
             );
         }
 
-        return new Result($this->getKey(), $codeChallengeMethod);
+        return new Result($this->getKey(), $isOpenIdScopePresent);
     }
 }

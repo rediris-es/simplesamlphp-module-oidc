@@ -49,6 +49,7 @@ use SimpleSAML\Modules\OpenIDConnect\Repositories\ScopeRepository;
 use SimpleSAML\Modules\OpenIDConnect\Repositories\UserRepository;
 use SimpleSAML\Modules\OpenIDConnect\Server\Grants\RefreshTokenGrant;
 use SimpleSAML\Modules\OpenIDConnect\Server\ResponseTypes\IdTokenResponse;
+use SimpleSAML\Modules\OpenIDConnect\Utils\Checker\Rules\AddClaimsToIdTokenRule;
 use SimpleSAML\Modules\OpenIDConnect\Utils\Checker\Rules\ClientIdRule;
 use SimpleSAML\Modules\OpenIDConnect\Utils\Checker\Rules\CodeChallengeMethodRule;
 use SimpleSAML\Modules\OpenIDConnect\Utils\Checker\Rules\CodeChallengeRule;
@@ -57,6 +58,9 @@ use SimpleSAML\Modules\OpenIDConnect\Utils\Checker\Rules\PromptRule;
 use SimpleSAML\Modules\OpenIDConnect\Utils\Checker\RequestRulesManager;
 use SimpleSAML\Modules\OpenIDConnect\Utils\Checker\Rules\RedirectUriRule;
 use SimpleSAML\Modules\OpenIDConnect\Utils\Checker\Rules\RequestParameterRule;
+use SimpleSAML\Modules\OpenIDConnect\Utils\Checker\Rules\RequiredNonceRule;
+use SimpleSAML\Modules\OpenIDConnect\Utils\Checker\Rules\RequiredOpenIdScopeRule;
+use SimpleSAML\Modules\OpenIDConnect\Utils\Checker\Rules\ResponseTypeRule;
 use SimpleSAML\Modules\OpenIDConnect\Utils\Checker\Rules\ScopeRule;
 use SimpleSAML\Modules\OpenIDConnect\Utils\Checker\Rules\StateRule;
 use SimpleSAML\Session;
@@ -153,8 +157,12 @@ class Container implements ContainerInterface
             new PromptRule($authSimpleFactory, $session),
             new MaxAgeRule($authSimpleFactory, $session),
             new ScopeRule($scopeRepository),
+            new RequiredOpenIdScopeRule(),
             new CodeChallengeRule(),
             new CodeChallengeMethodRule($codeChallengeVerifiersRepository),
+            new AddClaimsToIdTokenRule(),
+            new RequiredNonceRule(),
+            new ResponseTypeRule(),
         ];
         $requestRuleManager = new RequestRulesManager($requestRules);
         $this->services[RequestRulesManager::class] = $requestRuleManager;
@@ -188,7 +196,6 @@ class Container implements ContainerInterface
         $this->services[ClaimTranslatorExtractor::class] = $claimTranslatorExtractor;
 
         $idTokenBuilderFactory = new IdTokenBuilderFactory(
-            $userRepository,
             $configurationService,
             $claimTranslatorExtractor,
             $privateKey
@@ -196,6 +203,8 @@ class Container implements ContainerInterface
         $this->services[IdTokenBuilder::class] = $idTokenBuilderFactory->build();
 
         $idTokenResponseFactory = new IdTokenResponseFactory(
+            $userRepository,
+            $this->services[ConfigurationService::class],
             $this->services[IdTokenBuilder::class],
             $privateKey,
             $encryptionKey
@@ -214,7 +223,11 @@ class Container implements ContainerInterface
         $oAuth2ImplicitGrantFactory = new OAuth2ImplicitGrantFactory($accessTokenDuration, $requestRuleManager);
         $this->services[OAuth2ImplicitGrant::class] = $oAuth2ImplicitGrantFactory->build();
 
-        $implicitGrantFactory = new ImplicitGrantFactory($this->services[IdTokenBuilder::class], $accessTokenDuration, $requestRuleManager);
+        $implicitGrantFactory = new ImplicitGrantFactory(
+            $this->services[IdTokenBuilder::class],
+            $accessTokenDuration,
+            $requestRuleManager
+        );
         $this->services[ImplicitGrant::class] = $implicitGrantFactory->build();
 
         $refreshTokenGrantFactory = new RefreshTokenGrantFactory(

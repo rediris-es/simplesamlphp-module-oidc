@@ -3,11 +3,12 @@
 namespace SimpleSAML\Modules\OpenIDConnect\Utils\Checker\Rules;
 
 use Psr\Http\Message\ServerRequestInterface;
+use SimpleSAML\Modules\OpenIDConnect\Server\Exceptions\OidcServerException;
 use SimpleSAML\Modules\OpenIDConnect\Utils\Checker\Interfaces\ResultBagInterface;
 use SimpleSAML\Modules\OpenIDConnect\Utils\Checker\Interfaces\ResultInterface;
 use SimpleSAML\Modules\OpenIDConnect\Utils\Checker\Result;
 
-class StateRule extends AbstractRule
+class AddClaimsToIdTokenRule extends AbstractRule
 {
     /**
      * @inheritDoc
@@ -18,9 +19,9 @@ class StateRule extends AbstractRule
         array $data = [],
         bool $useFragmentInHttpErrorResponses = false
     ): ?ResultInterface {
-        /** @var string|null $state */
-        $state = $request->getQueryParams()['state'] ?? null;
 
-        return new Result($this->getKey(), $state);
+        $responseType = $currentResultBag->getOrFail(ResponseTypeRule::class)->getValue();
+
+        return new Result($this->getKey(), $responseType === "id_token");
     }
 }
