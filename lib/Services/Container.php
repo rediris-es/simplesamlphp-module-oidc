@@ -204,6 +204,7 @@ class Container implements ContainerInterface
 
         $authCodeGrantFactory = new AuthCodeGrantFactory(
             $authCodeRepository,
+            $accessTokenRepository,
             $refreshTokenRepository,
             $refreshTokenDuration,
             $authCodeDuration,
