@@ -16,13 +16,13 @@ namespace SimpleSAML\Modules\OpenIDConnect\Entity;
 
 use League\OAuth2\Server\Entities\Traits\EntityTrait;
 use League\OAuth2\Server\Entities\Traits\TokenEntityTrait;
-use SimpleSAML\Modules\OpenIDConnect\Entity\Interfaces\OidcAuthCodeEntityInterface;
+use SimpleSAML\Modules\OpenIDConnect\Entity\Interfaces\AuthCodeEntityInterface;
 use SimpleSAML\Modules\OpenIDConnect\Entity\Interfaces\MementoInterface;
 use SimpleSAML\Modules\OpenIDConnect\Entity\Traits\OidcAuthCodeTrait;
 use SimpleSAML\Modules\OpenIDConnect\Entity\Traits\RevokeTokenTrait;
 use SimpleSAML\Modules\OpenIDConnect\Utils\TimestampGenerator;
 
-class AuthCodeEntity implements OidcAuthCodeEntityInterface, MementoInterface
+class AuthCodeEntity implements AuthCodeEntityInterface, MementoInterface
 {
     use EntityTrait;
     use TokenEntityTrait;

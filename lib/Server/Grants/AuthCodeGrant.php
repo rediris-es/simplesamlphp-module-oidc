@@ -17,7 +17,7 @@ use League\OAuth2\Server\Exception\OAuthServerException;
 use League\OAuth2\Server\Exception\UniqueTokenIdentifierConstraintViolationException;
 use League\OAuth2\Server\Grant\AuthCodeGrant as OAuth2AuthCodeGrant;
 use SimpleSAML\Modules\OpenIDConnect\Repositories\Interfaces\AccessTokenRepositoryInterface;
-use League\OAuth2\Server\Repositories\AuthCodeRepositoryInterface;
+use League\OAuth2\Server\Repositories\AuthCodeRepositoryInterface as OAuth2AuthCodeRepositoryInterface;
 use SimpleSAML\Modules\OpenIDConnect\Repositories\Interfaces\RefreshTokenRepositoryInterface;
 use League\OAuth2\Server\RequestEvent;
 use League\OAuth2\Server\RequestTypes\AuthorizationRequest as OAuth2AuthorizationRequest;
@@ -26,8 +26,8 @@ use League\OAuth2\Server\ResponseTypes\ResponseTypeInterface;
 use LogicException;
 use Psr\Http\Message\ServerRequestInterface;
 use SimpleSAML\Modules\OpenIDConnect\Entity\Interfaces\ClientEntityInterface;
-use SimpleSAML\Modules\OpenIDConnect\Entity\Interfaces\OidcAuthCodeEntityInterface;
-use SimpleSAML\Modules\OpenIDConnect\Repositories\Interfaces\OidcAuthCodeRepositoryInterface;
+use SimpleSAML\Modules\OpenIDConnect\Entity\Interfaces\AuthCodeEntityInterface;
+use SimpleSAML\Modules\OpenIDConnect\Repositories\Interfaces\AuthCodeRepositoryInterface;
 use SimpleSAML\Modules\OpenIDConnect\Server\Exceptions\OidcServerException;
 use SimpleSAML\Modules\OpenIDConnect\Server\Grants\Interfaces\AuthorizationValidatableWithClientAndRedirectUriInterface;
 use SimpleSAML\Modules\OpenIDConnect\Server\Grants\Interfaces\OidcCapableGrantTypeInterface;
@@ -63,7 +63,7 @@ class AuthCodeGrant extends OAuth2AuthCodeGrant implements
     protected $codeChallengeVerifiers = [];
 
     /**
-     * @var OidcAuthCodeRepositoryInterface
+     * @var AuthCodeRepositoryInterface
      */
     protected $authCodeRepository;
 
@@ -88,7 +88,7 @@ class AuthCodeGrant extends OAuth2AuthCodeGrant implements
     protected $requireCodeChallengeForPublicClients = true;
 
     public function __construct(
-        AuthCodeRepositoryInterface $authCodeRepository,
+        OAuth2AuthCodeRepositoryInterface $authCodeRepository,
         AccessTokenRepositoryInterface $accessTokenRepository,
         RefreshTokenRepositoryInterface $refreshTokenRepository,
         DateInterval $authCodeTTL,
@@ -232,7 +232,7 @@ class AuthCodeGrant extends OAuth2AuthCodeGrant implements
      * @param string $redirectUri
      * @param array $scopes
      * @param string|null $nonce
-     * @return OidcAuthCodeEntityInterface
+     * @return AuthCodeEntityInterface
      * @throws OAuthServerException
      * @throws UniqueTokenIdentifierConstraintViolationException
      */
@@ -243,7 +243,7 @@ class AuthCodeGrant extends OAuth2AuthCodeGrant implements
         string $redirectUri,
         array $scopes = [],
         string $nonce = null
-    ): OidcAuthCodeEntityInterface {
+    ): AuthCodeEntityInterface {
         $maxGenerationAttempts = self::MAX_RANDOM_TOKEN_GENERATION_ATTEMPTS;
 
         $authCode = $this->authCodeRepository->getNewAuthCode();

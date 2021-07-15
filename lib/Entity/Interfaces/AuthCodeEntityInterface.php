@@ -2,9 +2,9 @@
 
 namespace SimpleSAML\Modules\OpenIDConnect\Entity\Interfaces;
 
-use League\OAuth2\Server\Entities\AuthCodeEntityInterface;
+use League\OAuth2\Server\Entities\AuthCodeEntityInterface as OAuth2AuthCodeEntityInterface;
 
-interface OidcAuthCodeEntityInterface extends AuthCodeEntityInterface
+interface AuthCodeEntityInterface extends OAuth2AuthCodeEntityInterface
 {
     /**
      * @return string|null
